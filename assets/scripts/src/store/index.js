@@ -133,6 +133,18 @@ export default class Store {
   }
 
   /**
+   * Get choices by it's GROUP_ID
+   * @return {Array} choice objects
+   */
+  getChoiceByGroupId(id) {
+    if (id) {
+      const choices = this.getChoicesFilteredByActive();
+      return choices.filter(choice => choice.groupId === parseInt(id, 10));
+    }
+    return false;
+  }
+
+  /**
    * Get groups from store
    * @return {Array} Group objects
    */

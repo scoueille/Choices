@@ -525,8 +525,8 @@ export const getWidthOfInput = (input) => {
 
     document.body.appendChild(testEl);
 
-    if (value && testEl.offsetWidth !== input.offsetWidth) {
-      width = testEl.offsetWidth + 4;
+    if (value && (testEl.offsetWidth+2) !== input.offsetWidth) {
+      width = testEl.offsetWidth + 6;
     }
 
     document.body.removeChild(testEl);

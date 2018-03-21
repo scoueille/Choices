@@ -62,6 +62,7 @@ class Choices {
       editItems: false,
       duplicateItems: true,
       delimiter: ',',
+      delimiterKeyCode: 188,
       paste: true,
       searchEnabled: true,
       searchChoices: true,
@@ -351,7 +352,7 @@ class Choices {
         if (this.isSelectOneElement) {
           return choice.groupId === group.id;
         }
-        return choice.groupId === group.id && !choice.selected;
+        return choice.groupId === group.id && (this.config.renderSelectedChoices === 'always' || !choice.selected);
       });
 
       if (groupChoices.length >= 1) {
@@ -1284,7 +1285,61 @@ class Choices {
       this.containerOuter.focus();
     }
   }
+  
+  /**
+   * Process click of a group
+   * @param {Array} activeItems The currently active items
+   * @param  {Element} element Group being interacted with
+   * @return
+   */
+  _handleChoiceGroupAction(activeItems, element) {
+    if (!activeItems || !element || this.isSelectOneElement) {
+      return;
+    }
 
+    // If we are clicking on an option
+    const id = element.getAttribute('data-id');
+    const choices = this.store.getChoiceByGroupId(id);
+    const passedKeyCode  = activeItems[0] && activeItems[0].keyCode ? activeItems[0].keyCode : null;
+    const hasActiveDropdown = this.dropdown.classList.contains(this.config.classNames.activeState);
+
+    
+    choices.forEach((choice) => {
+      // Update choice keyCode
+      choice.keyCode = passedKeyCode;
+  
+      triggerEvent(this.passedElement, 'choice', {
+        choice,
+      });
+  
+      if (choice && !choice.selected && !choice.disabled) {
+        const canAddItem = this._canAddItem(activeItems, choice.value);
+  
+        if (canAddItem.response) {
+          this._addItem(
+            choice.value,
+            choice.label,
+            choice.id,
+            choice.groupId,
+            choice.customProperties,
+            choice.placeholder,
+            choice.keyCode
+          );
+          this._triggerChange(choice.value);
+        }
+      }
+  
+    });
+
+    this.clearInput();
+
+    // We wont to close the dropdown if we are dealing with a single select box
+    if (hasActiveDropdown && this.isSelectOneElement) {
+      this.hideDropdown();
+      this.containerOuter.focus();
+    }
+  }
+  
   /**
    * Process back space event
    * @param  {Array} activeItems items
@@ -1594,6 +1649,8 @@ class Choices {
       // length than 75% of the placeholder. This stops the input jumping around.
       if (this.input.value && this.input.value.length >= (this.placeholder.length / 1.25)) {
         this.input.style.width = getWidthOfInput(this.input);
+      } else if(this.input.value.length == 0) {
+        this.input.style.width = getWidthOfInput(this.input);
       }
     } else {
       // If there is no placeholder, resize input to contents
@@ -1618,6 +1675,7 @@ class Choices {
     const hasItems = this.itemList && this.itemList.children;
     const keyString = String.fromCharCode(e.keyCode);
 
+    const delimiterKey = this.config.delimiterKeyCode;
     const backKey = 46;
     const deleteKey = 8;
     const enterKey = 13;
@@ -1649,6 +1707,10 @@ class Choices {
 
     const onEnterKey = () => {
       // If enter key is pressed and the input has a value
+      if ( this.isTextElement && target.value.trim().length == 0 ) { // Enter direct ou délimiter
+        this.clearInput();
+        e.preventDefault();
+      }
       if (this.isTextElement && target.value) {
         const value = this.input.value;
         const canAddItem = this._canAddItem(activeItems, value);
@@ -1754,6 +1816,7 @@ class Choices {
     const keyDownActions = {
       [aKey]: onAKey,
       [enterKey]: onEnterKey,
+      [delimiterKey]: onEnterKey,
       [escapeKey]: onEscapeKey,
       [upKey]: onDirectionKey,
       [pageUpKey]: onDirectionKey,
@@ -1795,7 +1858,7 @@ class Choices {
           this.dropdown.innerHTML = dropdownItem.outerHTML;
         }
 
-        if (canAddItem.response === true) {
+        if (canAddItem.response === true || canAddItem.notice) {
           if (!hasActiveDropdown) {
             this.showDropdown();
           }
@@ -1906,6 +1969,8 @@ class Choices {
         this._handleItemAction(activeItems, foundTarget, hasShiftKey);
       } else if (foundTarget = findAncestorByAttrName(target, 'data-choice')) {
         this._handleChoiceAction(activeItems, foundTarget);
+      } else if (foundTarget = findAncestorByAttrName(target, 'data-group')) {
+        this._handleChoiceGroupAction(activeItems, foundTarget);
       }
 
       e.preventDefault();
@@ -1973,7 +2038,13 @@ class Choices {
   _onMouseOver(e) {
     // If the dropdown is either the target or one of its children is the target
     if (e.target === this.dropdown || this.dropdown.contains(e.target)) {
-      if (e.target.hasAttribute('data-choice')) this._highlightChoice(e.target);
+      if (e.target.hasAttribute('data-choice')) {
+        this._highlightChoice(e.target);
+      } else if (e.target.hasAttribute('data-group') && !this.isSelectOneElement) {
+        this._highlightChoice(e.target);
+      } else if (e.target.classList.contains(this.config.classNames.groupHeading) && !this.isSelectOneElement ) {
+        this._highlightChoice(e.target.parentNode);
+      }
     }
   }
 
@@ -2592,7 +2663,8 @@ class Choices {
         let localClasses = classNames(
           globalClasses.group,
           {
-            [globalClasses.itemDisabled]: data.disabled
+            [globalClasses.itemDisabled]: data.disabled,
+            [globalClasses.itemSelectable]: !data.disabled && !this.isSelectOneElement
           }
         );
 
@@ -2605,6 +2677,10 @@ class Choices {
             role="group"
             ${data.disabled ?
               'aria-disabled="true"' :
+              ''
+            }
+            ${!this.isSelectOneElement ? 
+              `data-choice-selectable data-select-text="${this.config.itemSelectText}"` :
               ''
             }
             >

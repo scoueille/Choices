@@ -215,6 +215,11 @@ $choices-button-offset: 8px !default;
     font-size: $choices-font-size-md;
     [dir="rtl"] & { text-align: right; }
   }
+  .#{$choices-selector}__group {
+    position: relative;
+    font-size: $choices-font-size-md;
+    [dir="rtl"] & { text-align: right; }
+  }
   .#{$choices-selector}__item--selectable {
     @media (min-width: 640px) {
       padding-right: 100px;
