@@ -63,7 +63,6 @@ class Choices {
       editItems: false,
       duplicateItems: true,
       delimiter: ',',
-      delimiterKeyCode: 188,
       paste: true,
       searchEnabled: true,
       searchChoices: true,
@@ -1676,7 +1675,6 @@ class Choices {
     const hasItems = this.itemList && this.itemList.children;
     const keyString = String.fromCharCode(e.keyCode);
 
-    const delimiterKey = this.config.delimiterKeyCode;
     const backKey = 46;
     const deleteKey = 8;
     const enterKey = 13;
@@ -1708,10 +1706,6 @@ class Choices {
 
     const onEnterKey = () => {
       // If enter key is pressed and the input has a value
-      if ( this.isTextElement && target.value.trim().length == 0 ) { // Enter direct ou délimiter
-        this.clearInput();
-        e.preventDefault();
-      }
       if (this.isTextElement && target.value) {
         const value = this.input.value;
         const canAddItem = this._canAddItem(activeItems, value);
@@ -1817,7 +1811,6 @@ class Choices {
     const keyDownActions = {
       [aKey]: onAKey,
       [enterKey]: onEnterKey,
-      [delimiterKey]: onEnterKey,
       [escapeKey]: onEscapeKey,
       [upKey]: onDirectionKey,
       [pageUpKey]: onDirectionKey,
