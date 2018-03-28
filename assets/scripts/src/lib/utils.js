@@ -438,7 +438,7 @@ export const isScrolledIntoView = (el, parent, direction = 1) => {
  */
 export const stripHTML = html =>
    html.replace(/&/g, '&amp;')
-     .replace(/>/g, '&rt;')
+     .replace(/>/g, '&gt;')
      .replace(/</g, '&lt;')
      .replace(/"/g, '&quot;');
 
