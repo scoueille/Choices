@@ -140,6 +140,9 @@
       <label for="choices-multiple-remote-fetch">Options from remote source (Fetch API) &amp; limited to 5</label>
       <select class="form-control" name="choices-multiple-remote-fetch" id="choices-multiple-remote-fetch" multiple></select>
 
+      <label for="choices-multiple-remote-fetch-autocomplete">Options with autocomplete from remote source (Fetch API) &amp; limited to 5</label>
+      <select class="form-control" name="choices-multiple-remote-fetch-autocomplete" id="choices-multiple-remote-fetch-autocomplete" multiple></select>
+
       <label for="choices-multiple-rtl">Right-to-left</label>
       <select class="form-control" data-trigger name="choices-multiple-rtl" id="choices-multiple-rtl" placeholder="This is a placeholder"
         multiple dir="rtl">
@@ -352,6 +355,20 @@
             console.error(error);
           });
       });
+
+
+      var multipleFetchAutocomplete = new Choices('#choices-multiple-remote-fetch-autocomplete', {
+        placeholder: true,
+        placeholderValue: 'Pick an string',
+        maxItemCount: 5,
+        searchUrlEnabled: true,
+        searchUrl: 'https://api.discogs.com/artists/55980/releases?token=QBRmstCkwXEvCjTclCpumbtNwvVkEzGAdELXyRyW&search=',
+        searchUrlResultsArray: 'releases',
+        searchUrlLabel: 'title',
+        searchUrlValue: 'title',
+      });
+
+
 
       var multipleCancelButton = new Choices('#choices-multiple-remove-button', {
         removeItemButton: true,

@@ -88,6 +88,10 @@ const choices = (state = [], action) => {
       });
     }
 
+    case 'CLEAR_PLACEHOLDERS': {
+      return state.filter(choice => choice.placeholder !== true);
+    }
+
     case 'CLEAR_CHOICES': {
       return state.choices = [];
     }

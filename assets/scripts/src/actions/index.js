@@ -63,6 +63,12 @@ export const clearChoices = () => {
   };
 };
 
+export const clearPlaceholders = () => {
+  return {
+    type: 'CLEAR_PLACEHOLDERS',
+  };
+};
+
 export const addGroup = (value, id, active, disabled) => {
   return {
     type: 'ADD_GROUP',

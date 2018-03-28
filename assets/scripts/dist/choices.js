@@ -126,10 +126,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      editItems: false,
 	      duplicateItems: true,
 	      delimiter: ',',
-	      delimiterKeyCode: 188,
 	      paste: true,
 	      searchEnabled: true,
 	      searchChoices: true,
+	      searchUrlEnabled: false,
+	      searchUrl: null,
+	      searchUrlResultsArray: 'results',
+	      searchUrlLabel: 'label',
+	      searchUrlValue: 'value',
 	      searchFloor: 1,
 	      searchResultLimit: 4,
 	      searchFields: ['label', 'value'],
@@ -148,9 +152,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      loadingText: 'Loading...',
 	      noResultsText: 'No results found',
 	      noChoicesText: 'No choices to choose from',
+	      typeToSearchText: 'Start typing to search for',
 	      itemSelectText: 'Press to select',
 	      addItemText: function addItemText(value) {
-	        return 'Press Enter to add <b>"' + value + '"</b>';
+	        return 'Press Enter to add <b>"' + (0, _utils.stripHTML)(value) + '"</b>';
 	      },
 	      maxItemText: function maxItemText(maxItemCount) {
 	        return 'Only ' + maxItemCount + ' values can be added.';
@@ -197,6 +202,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.idNames = {
 	      itemChoice: 'item-choice'
 	    };
+
+	    this.timer = null;
 
 	    // Merge options with user options
 	    this.config = (0, _utils.extend)(defaultConfig, userConfig);
@@ -635,6 +642,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                notice = (0, _utils.isType)('Function', this.config.noResultsText) ? this.config.noResultsText() : this.config.noResultsText;
 
 	                dropdownItem = this._getTemplate('notice', notice, 'no-results');
+	              } else if (this.config.searchUrlEnabled) {
+	                notice = (0, _utils.isType)('Function', this.config.typeToSearchText) ? this.config.typeToSearchText() : this.config.typeToSearchText;
+
+	                dropdownItem = this._getTemplate('notice', notice, 'no-choices');
 	              } else {
 	                notice = (0, _utils.isType)('Function', this.config.noChoicesText) ? this.config.noChoicesText() : this.config.noChoicesText;
 
@@ -1644,7 +1655,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var currentValue = (0, _utils.isType)('String', this.currentValue) ? this.currentValue.trim() : this.currentValue;
 
 	      // If new value matches the desired length and is not the same as the current value with a space
-	      if (newValue.length >= 1 && newValue !== currentValue + ' ') {
+	      if (newValue.length >= 1 && !this.config.searchUrlEnabled && newValue !== currentValue + ' ') {
 	        var haystack = this.store.getSearchableChoices();
 	        var needle = newValue;
 	        var keys = (0, _utils.isType)('Array', this.config.searchFields) ? this.config.searchFields : [this.config.searchFields];
@@ -1658,11 +1669,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.store.dispatch((0, _index3.filterChoices)(results));
 
 	        return results.length;
+	      } else if (newValue.length >= 1 && this.config.searchUrlEnabled && newValue != currentValue && newValue !== currentValue + ' ') {
+	        if (null !== this.timer) {
+	          clearTimeout(this.timer);
+	        }
+	        this.currentValue = newValue;
+	        this._clearPlaceholders();
+	        this._addChoice(value, value, false, false, -1, null, true);
+	        this.timer = setTimeout(function (value, parent) {
+	          parent.highlightPosition = 0;
+	          parent.isSearching = false;
+
+	          var xmlhttp = new XMLHttpRequest();
+	          var url = parent.config.searchUrl + value;
+
+	          xmlhttp.onload = function (e) {
+	            var data = JSON.parse(xmlhttp.responseText);
+	            parent._searchParseResult(data, value);
+	          };
+
+	          xmlhttp.open('GET', url, true);
+	          xmlhttp.send();
+	        }, 3000, newValue, this);
+	      } else if (newValue.length == 0 && this.config.searchUrlEnabled && newValue != currentValue) {
+	        if (null !== this.timer) {
+	          clearTimeout(this.timer);
+	        }
+	        this.currentValue = newValue;
+	        this._clearPlaceholders();
 	      }
 
 	      return 0;
 	    }
 
+	    /**
+	     * Proceed Ajax results
+	     * @param  {String} data JSON result
+	     * @param  {String} value Search value
+	     * @return
+	     * @private
+	     */
+
+	  }, {
+	    key: '_searchParseResult',
+	    value: function _searchParseResult(data, value) {
+	      this._clearChoices();
+	      this._addChoice(value, value, false, false, -1, null, true);
+	      console.log(value);
+	      console.log(data);
+	      this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+	    }
 	    /**
 	     * Determine the action when a user is searching
 	     * @param  {String} value Value entered by user
@@ -1701,6 +1757,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	          // Otherwise reset choices to active
 	          this.isSearching = false;
 	          this.store.dispatch((0, _index3.activateChoices)(true));
+	        } else if (value && value.length < this.config.searchFloor && this.config.searchUrlEnabled) {
+	          if (null !== this.timer) {
+	            clearTimeout(this.timer);
+	          }
+	          this._clearPlaceholders();
 	        }
 	      }
 	    }
@@ -1807,7 +1868,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var hasItems = this.itemList && this.itemList.children;
 	      var keyString = String.fromCharCode(e.keyCode);
 
-	      var delimiterKey = this.config.delimiterKeyCode;
 	      var backKey = 46;
 	      var deleteKey = 8;
 	      var enterKey = 13;
@@ -1839,11 +1899,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var onEnterKey = function onEnterKey() {
 	        // If enter key is pressed and the input has a value
-	        if (_this17.isTextElement && target.value.trim().length == 0) {
-	          // Enter direct ou délimiter
-	          _this17.clearInput();
-	          e.preventDefault();
-	        }
 	        if (_this17.isTextElement && target.value) {
 	          var value = _this17.input.value;
 	          var canAddItem = _this17._canAddItem(activeItems, value);
@@ -1945,7 +2000,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 
 	      // Map keys to key actions
-	      var keyDownActions = (_keyDownActions = {}, _defineProperty(_keyDownActions, aKey, onAKey), _defineProperty(_keyDownActions, enterKey, onEnterKey), _defineProperty(_keyDownActions, delimiterKey, onEnterKey), _defineProperty(_keyDownActions, escapeKey, onEscapeKey), _defineProperty(_keyDownActions, upKey, onDirectionKey), _defineProperty(_keyDownActions, pageUpKey, onDirectionKey), _defineProperty(_keyDownActions, downKey, onDirectionKey), _defineProperty(_keyDownActions, pageDownKey, onDirectionKey), _defineProperty(_keyDownActions, deleteKey, onDeleteKey), _defineProperty(_keyDownActions, backKey, onDeleteKey), _keyDownActions);
+	      var keyDownActions = (_keyDownActions = {}, _defineProperty(_keyDownActions, aKey, onAKey), _defineProperty(_keyDownActions, enterKey, onEnterKey), _defineProperty(_keyDownActions, escapeKey, onEscapeKey), _defineProperty(_keyDownActions, upKey, onDirectionKey), _defineProperty(_keyDownActions, pageUpKey, onDirectionKey), _defineProperty(_keyDownActions, downKey, onDirectionKey), _defineProperty(_keyDownActions, pageDownKey, onDirectionKey), _defineProperty(_keyDownActions, deleteKey, onDeleteKey), _defineProperty(_keyDownActions, backKey, onDeleteKey), _keyDownActions);
 
 	      // If keycode has a function, run it
 	      if (keyDownActions[e.keyCode]) {
@@ -1999,6 +2054,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // If user has removed value...
 	        if ((e.keyCode === backKey || e.keyCode === deleteKey) && !e.target.value) {
 	          // ...and it is a multiple select input, activate choices (if searching)
+	          if ((!this.input.value || this.input.value.length == 0) && this.config.searchUrlEnabled) {
+	            if (null !== this.timer) {
+	              clearTimeout(this.timer);
+	            }
+	            this._clearPlaceholders();
+	          }
 	          if (!this.isTextElement && this.isSearching) {
 	            this.isSearching = false;
 	            this.store.dispatch((0, _index3.activateChoices)(true));
@@ -2602,7 +2663,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Generate unique id
 	      var choices = this.store.getChoices();
 	      var choiceLabel = label || value;
-	      var choiceId = choices ? choices.length + 1 : 1;
+	      var choiceId = choices ? this.store.getMaxChoicesId() + 1 : 1;
 	      var choiceElementId = this.baseId + '-' + this.idNames.itemChoice + '-' + choiceId;
 
 	      this.store.dispatch((0, _index3.addChoice)(value, choiceLabel, choiceId, groupId, isDisabled, choiceElementId, customProperties, placeholder, keyCode));
@@ -2622,6 +2683,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: '_clearChoices',
 	    value: function _clearChoices() {
 	      this.store.dispatch((0, _index3.clearChoices)());
+	    }
+
+	    /**
+	     * Clear all choices added to the store.
+	     * @return
+	     * @private
+	     */
+
+	  }, {
+	    key: '_clearPlaceholders',
+	    value: function _clearPlaceholders() {
+	      this.store.dispatch((0, _index3.clearPlaceholders)());
 	    }
 
 	    /**
@@ -3951,6 +4024,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function getChoices() {
 	      var state = this.store.getState();
 	      return state.choices;
+	    }
+
+	    /**
+	     * Get max choices id from store
+	     * @return Number max id
+	     */
+
+	  }, {
+	    key: 'getMaxChoicesId',
+	    value: function getMaxChoicesId() {
+	      var state = this.store.getState();
+	      return Math.max.apply(Math, _toConsumableArray(state.choices.map(function (o) {
+	        return o.id;
+	      })).concat([0]));
 	    }
 
 	    /**
@@ -5406,6 +5493,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	      }
 
+	    case 'CLEAR_PLACEHOLDERS':
+	      {
+	        return state.filter(function (choice) {
+	          return choice.placeholder !== true;
+	        });
+	      }
+
 	    case 'CLEAR_CHOICES':
 	      {
 	        return state.choices = [];
@@ -5523,6 +5617,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	var clearChoices = exports.clearChoices = function clearChoices() {
 	  return {
 	    type: 'CLEAR_CHOICES'
+	  };
+	};
+
+	var clearPlaceholders = exports.clearPlaceholders = function clearPlaceholders() {
+	  return {
+	    type: 'CLEAR_PLACEHOLDERS'
 	  };
 	};
 
@@ -5991,14 +6091,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	/**
-	 * Remove html tags from a string
-	 * @param  {String}  Initial string/html
+	 * Escape html in a string
+	 * @param  {String} html  Initial string/html
 	 * @return {String}  Sanitised string
 	 */
 	var stripHTML = exports.stripHTML = function stripHTML(html) {
-	  var el = document.createElement("DIV");
-	  el.innerHTML = html;
-	  return el.textContent || el.innerText || "";
+	  return html.replace(/&/g, '&amp;').replace(/>/g, '&rt;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 	};
 
 	/**
@@ -6059,7 +6157,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var width = input.offsetWidth;
 
 	  if (value) {
-	    var testEl = strToEl('<span>' + value + '</span>');
+	    var testEl = strToEl('<span>' + stripHTML(value) + '</span>');
 	    testEl.style.position = 'absolute';
 	    testEl.style.padding = '0';
 	    testEl.style.top = '-9999px';

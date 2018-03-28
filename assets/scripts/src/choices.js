@@ -12,6 +12,7 @@ import {
   addGroup,
   clearAll,
   clearChoices,
+  clearPlaceholders,
 }
 from './actions/index';
 import {
@@ -66,6 +67,11 @@ class Choices {
       paste: true,
       searchEnabled: true,
       searchChoices: true,
+      searchUrlEnabled: false,
+      searchUrl: null,
+      searchUrlResultsArray: 'results',
+      searchUrlLabel: 'label',
+      searchUrlValue: 'value',
       searchFloor: 1,
       searchResultLimit: 4,
       searchFields: ['label', 'value'],
@@ -84,6 +90,7 @@ class Choices {
       loadingText: 'Loading...',
       noResultsText: 'No results found',
       noChoicesText: 'No choices to choose from',
+      typeToSearchText: 'Start typing to search for',
       itemSelectText: 'Press to select',
       addItemText: (value) => {
         return `Press Enter to add <b>"${stripHTML(value)}"</b>`;
@@ -134,6 +141,8 @@ class Choices {
       itemChoice: 'item-choice'
     };
 
+    this.timer = null;
+    
     // Merge options with user options
     this.config = extend(defaultConfig, userConfig);
 
@@ -546,6 +555,12 @@ class Choices {
                 this.config.noResultsText;
 
               dropdownItem = this._getTemplate('notice', notice, 'no-results');
+            } else if (this.config.searchUrlEnabled) {
+              notice = isType('Function', this.config.typeToSearchText) ?
+                this.config.typeToSearchText() :
+                this.config.typeToSearchText;
+
+              dropdownItem = this._getTemplate('notice', notice, 'no-choices');
             } else {
               notice = isType('Function', this.config.noChoicesText) ?
                 this.config.noChoicesText() :
@@ -1528,7 +1543,7 @@ class Choices {
     const currentValue = isType('String', this.currentValue) ? this.currentValue.trim() : this.currentValue;
 
     // If new value matches the desired length and is not the same as the current value with a space
-    if (newValue.length >= 1 && newValue !== `${currentValue} `) {
+    if (newValue.length >= 1 && !this.config.searchUrlEnabled && newValue !== `${currentValue} `) {
       const haystack = this.store.getSearchableChoices();
       const needle = newValue;
       const keys = isType('Array', this.config.searchFields) ? this.config.searchFields : [this.config.searchFields];
@@ -1544,11 +1559,58 @@ class Choices {
       );
 
       return results.length;
+    } else if (newValue.length >= 1 && this.config.searchUrlEnabled && newValue != currentValue && newValue !== `${currentValue} `) {
+      if (null !== this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.currentValue = newValue;
+      this._clearPlaceholders();
+      this._addChoice(
+        value,
+        value, false, false, -1, null, true);
+      this.timer = setTimeout(function(value, parent){ 
+        parent.highlightPosition = 0;
+        parent.isSearching = false;
+    
+        var xmlhttp = new XMLHttpRequest();
+        var url = parent.config.searchUrl + value;
+    
+        xmlhttp.onload  = function(e) {
+          var data = JSON.parse(xmlhttp.responseText);
+          parent._searchParseResult(data, value);
+        }
+        
+        xmlhttp.open('GET', url, true);
+        xmlhttp.send();
+      }, 3000, newValue, this);
+    } else if (newValue.length == 0 && this.config.searchUrlEnabled && newValue != currentValue) {
+      if (null !== this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.currentValue = newValue;
+      this._clearPlaceholders();
     }
 
     return 0;
   }
 
+  /**
+   * Proceed Ajax results
+   * @param  {String} data JSON result
+   * @param  {String} value Search value
+   * @return
+   * @private
+   */
+  _searchParseResult(data, value) {
+    this._clearChoices();
+    this._addChoice(
+      value,
+      value, false, false, -1, null, true);
+    console.log(value);
+    console.log(data);
+    this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+
+  }
   /**
    * Determine the action when a user is searching
    * @param  {String} value Value entered by user
@@ -1584,6 +1646,11 @@ class Choices {
         this.store.dispatch(
           activateChoices(true)
         );
+      } else if (value && value.length < this.config.searchFloor && this.config.searchUrlEnabled) {
+        if (null !== this.timer) {
+          clearTimeout(this.timer);
+        }
+        this._clearPlaceholders();
       }
     }
   }
@@ -1869,6 +1936,12 @@ class Choices {
       // If user has removed value...
       if ((e.keyCode === backKey || e.keyCode === deleteKey) && !e.target.value) {
         // ...and it is a multiple select input, activate choices (if searching)
+        if((!this.input.value || this.input.value.length == 0) && this.config.searchUrlEnabled) {
+          if (null !== this.timer) {
+            clearTimeout(this.timer);
+          }
+          this._clearPlaceholders();
+        }
         if (!this.isTextElement && this.isSearching) {
           this.isSearching = false;
           this.store.dispatch(
@@ -1877,7 +1950,7 @@ class Choices {
         }
       } else if (this.canSearch && canAddItem.response) {
         this._handleSearch(this.input.value);
-      }
+      } 
     }
     // Re-establish canSearch value from changes in _onKeyDown
     this.canSearch = this.config.searchEnabled;
@@ -2413,7 +2486,7 @@ class Choices {
     // Generate unique id
     const choices = this.store.getChoices();
     const choiceLabel = label || value;
-    const choiceId = choices ? choices.length + 1 : 1;
+    const choiceId = choices ?  this.store.getMaxChoicesId() + 1 : 1;
     const choiceElementId = `${this.baseId}-${this.idNames.itemChoice}-${choiceId}`;
 
     this.store.dispatch(
@@ -2451,6 +2524,17 @@ class Choices {
   _clearChoices() {
     this.store.dispatch(
       clearChoices()
+    );
+  }
+
+  /**
+   * Clear all choices added to the store.
+   * @return
+   * @private
+   */
+  _clearPlaceholders() {
+    this.store.dispatch(
+      clearPlaceholders()
     );
   }
 

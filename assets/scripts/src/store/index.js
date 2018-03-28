@@ -88,6 +88,17 @@ export default class Store {
     return state.choices;
   }
 
+
+  /**
+   * Get max choices id from store
+   * @return Number max id
+   */
+  getMaxChoicesId() {
+    const state = this.store.getState();
+    return Math.max(...state.choices.map(o => o.id), 0);
+  }
+
+
   /**
    * Get active choices from store
    * @return {Array} Option objects
