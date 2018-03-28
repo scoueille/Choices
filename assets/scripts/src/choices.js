@@ -93,7 +93,7 @@ class Choices {
       typeToSearchText: 'Start typing to search for',
       itemSelectText: 'Press to select',
       addItemText: (value) => {
-        return `Press Enter to add <b>"${stripHTML(value)}"</b>`;
+        return `Press Enter to add <b>"${value}"</b>`;
       },
       maxItemText: (maxItemCount) => {
         return `Only ${maxItemCount} values can be added.`;
@@ -1774,7 +1774,7 @@ class Choices {
     const onEnterKey = () => {
       // If enter key is pressed and the input has a value
       if (this.isTextElement && target.value) {
-        const value = this.input.value;
+        const value = stripHTML(this.input.value);
         const canAddItem = this._canAddItem(activeItems, value);
 
         // All is good, add
@@ -1904,7 +1904,7 @@ class Choices {
       return;
     }
 
-    const value = this.input.value;
+    const value = stripHTML(this.input.value);
     const activeItems = this.store.getItemsFilteredByActive();
     const canAddItem = this._canAddItem(activeItems, value);
 
