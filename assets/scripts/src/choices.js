@@ -1936,7 +1936,7 @@ class Choices {
       // If user has removed value...
       if ((e.keyCode === backKey || e.keyCode === deleteKey) && !e.target.value) {
         // ...and it is a multiple select input, activate choices (if searching)
-        if((!this.input.value || this.input.value.length == 0) && this.config.searchUrlEnabled) {
+        if((!value || value.length == 0) && this.config.searchUrlEnabled) {
           if (null !== this.timer) {
             clearTimeout(this.timer);
           }
@@ -1949,7 +1949,7 @@ class Choices {
           );
         }
       } else if (this.canSearch && canAddItem.response) {
-        this._handleSearch(this.input.value);
+        this._handleSearch(value);
       } 
     }
     // Re-establish canSearch value from changes in _onKeyDown
