@@ -155,7 +155,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      typeToSearchText: 'Start typing to search for',
 	      itemSelectText: 'Press to select',
 	      addItemText: function addItemText(value) {
-	        return 'Press Enter to add <b>"' + (0, _utils.stripHTML)(value) + '"</b>';
+	        return 'Press Enter to add <b>"' + value + '"</b>';
 	      },
 	      maxItemText: function maxItemText(maxItemCount) {
 	        return 'Only ' + maxItemCount + ' values can be added.';
@@ -1900,7 +1900,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var onEnterKey = function onEnterKey() {
 	        // If enter key is pressed and the input has a value
 	        if (_this17.isTextElement && target.value) {
-	          var value = _this17.input.value;
+	          var value = (0, _utils.stripHTML)(_this17.input.value);
 	          var canAddItem = _this17._canAddItem(activeItems, value);
 
 	          // All is good, add
@@ -2022,7 +2022,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return;
 	      }
 
-	      var value = this.input.value;
+	      var value = (0, _utils.stripHTML)(this.input.value);
 	      var activeItems = this.store.getItemsFilteredByActive();
 	      var canAddItem = this._canAddItem(activeItems, value);
 
@@ -2054,7 +2054,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // If user has removed value...
 	        if ((e.keyCode === backKey || e.keyCode === deleteKey) && !e.target.value) {
 	          // ...and it is a multiple select input, activate choices (if searching)
-	          if ((!this.input.value || this.input.value.length == 0) && this.config.searchUrlEnabled) {
+	          if ((!value || value.length == 0) && this.config.searchUrlEnabled) {
 	            if (null !== this.timer) {
 	              clearTimeout(this.timer);
 	            }
@@ -2065,7 +2065,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.store.dispatch((0, _index3.activateChoices)(true));
 	          }
 	        } else if (this.canSearch && canAddItem.response) {
-	          this._handleSearch(this.input.value);
+	          this._handleSearch(value);
 	        }
 	      }
 	      // Re-establish canSearch value from changes in _onKeyDown
@@ -6096,7 +6096,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {String}  Sanitised string
 	 */
 	var stripHTML = exports.stripHTML = function stripHTML(html) {
-	  return html.replace(/&/g, '&amp;').replace(/>/g, '&rt;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+	  return html.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 	};
 
 	/**
