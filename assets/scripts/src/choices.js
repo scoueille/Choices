@@ -393,7 +393,7 @@ class Choices {
       if (shouldRender) {
         const dropdownItem = this._getTemplate('choice', choice);
         choicesFragment.appendChild(dropdownItem);
-      }
+      } 
     };
 
     let rendererableChoices = choices;
@@ -1606,8 +1606,6 @@ class Choices {
     this._addChoice(
       value,
       value, false, false, -1, null, true);
-    console.log(value);
-    console.log(data);
     this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
 
   }
@@ -1949,8 +1947,15 @@ class Choices {
           );
         }
       } else if (this.canSearch && canAddItem.response) {
+        this.store.dispatch(
+          activateChoices(true)
+        );
         this._handleSearch(value);
-      } 
+      } else if (canAddItem.notice) {
+        this._clearPlaceholders();
+        this.choiceList.innerHTML = '';
+        this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
+      }
     }
     // Re-establish canSearch value from changes in _onKeyDown
     this.canSearch = this.config.searchEnabled;

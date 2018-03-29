@@ -1715,8 +1715,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function _searchParseResult(data, value) {
 	      this._clearChoices();
 	      this._addChoice(value, value, false, false, -1, null, true);
-	      console.log(value);
-	      console.log(data);
 	      this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
 	    }
 	    /**
@@ -2065,7 +2063,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.store.dispatch((0, _index3.activateChoices)(true));
 	          }
 	        } else if (this.canSearch && canAddItem.response) {
+	          this.store.dispatch((0, _index3.activateChoices)(true));
 	          this._handleSearch(value);
+	        } else if (canAddItem.notice) {
+	          this._clearPlaceholders();
+	          this.choiceList.innerHTML = '';
+	          this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
 	        }
 	      }
 	      // Re-establish canSearch value from changes in _onKeyDown
