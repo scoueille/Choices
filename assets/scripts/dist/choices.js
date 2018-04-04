@@ -203,7 +203,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      itemChoice: 'item-choice'
 	    };
 
-	    this.timer = null;
+	    this.ajaxRequest = null;
 
 	    // Merge options with user options
 	    this.config = (0, _utils.extend)(defaultConfig, userConfig);
@@ -1288,6 +1288,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: value
 	      });
 	    }
+	  }, {
+	    key: '_abortAjax',
+	    value: function _abortAjax() {
+	      if (this.ajaxRequest) {
+	        this.ajaxRequest.abort();
+	        this.ajaxRequest = null;
+	      }
+	    }
 
 	    /**
 	     * Process enter/click of an item button
@@ -1425,10 +1433,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.containerOuter.focus();
 	      }
 	      if (this.config.searchUrlEnabled) {
+	        this._abortAjax();
 	        this._clearChoices();
-	        if (null !== this.timer) {
-	          clearTimeout(this.timer);
-	        }
 	      }
 	    }
 
@@ -1683,31 +1689,29 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        return results.length;
 	      } else if (newValue.length >= 1 && this.config.searchUrlEnabled && newValue != currentValue && newValue !== currentValue + ' ') {
-	        if (null !== this.timer) {
-	          clearTimeout(this.timer);
-	        }
+	        this._abortAjax();
 	        this.currentValue = newValue;
 	        this._clearPlaceholders();
 	        this._addChoice(value, value, false, false, -1, null, true);
-	        this.timer = setTimeout(function (value, parent) {
-	          parent.highlightPosition = 0;
-	          parent.isSearching = false;
 
-	          var xmlhttp = new XMLHttpRequest();
-	          var url = parent.config.searchUrl + value;
+	        this.highlightPosition = 0;
+	        this.isSearching = false;
 
-	          xmlhttp.onload = function (e) {
-	            var data = JSON.parse(xmlhttp.responseText);
-	            parent._searchParseResult(data, value);
-	          };
+	        this.ajaxRequest = new XMLHttpRequest();
+	        var url = this.config.searchUrl + value;
 
-	          xmlhttp.open('GET', url, true);
-	          xmlhttp.send();
-	        }, 3000, newValue, this);
+	        var that = this;
+	        this.ajaxRequest.onload = function (e) {
+	          if (that.ajaxRequest != null) {
+	            var data = JSON.parse(that.ajaxRequest.responseText);
+	            that._searchParseResult(data, value);
+	          }
+	        };
+
+	        this.ajaxRequest.open('GET', url, true);
+	        this.ajaxRequest.send();
 	      } else if (newValue.length == 0 && this.config.searchUrlEnabled && newValue != currentValue) {
-	        if (null !== this.timer) {
-	          clearTimeout(this.timer);
-	        }
+	        this._abortAjax();
 	        this.currentValue = newValue;
 	        this._clearPlaceholders();
 	      }
@@ -1786,9 +1790,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          this.isSearching = false;
 	          this.store.dispatch((0, _index3.activateChoices)(true));
 	        } else if (value && value.length < this.config.searchFloor && this.config.searchUrlEnabled) {
-	          if (null !== this.timer) {
-	            clearTimeout(this.timer);
-	          }
+	          this._abortAjax();
 	          this._clearPlaceholders();
 	        }
 	      }
@@ -2083,9 +2085,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if ((e.keyCode === backKey || e.keyCode === deleteKey) && !e.target.value) {
 	          // ...and it is a multiple select input, activate choices (if searching)
 	          if ((!value || value.length == 0) && this.config.searchUrlEnabled) {
-	            if (null !== this.timer) {
-	              clearTimeout(this.timer);
-	            }
+	            this._abortAjax();
 	            this._clearChoices();
 	            var notice = (0, _utils.isType)('Function', this.config.typeToSearchText) ? this.config.typeToSearchText() : this.config.typeToSearchText;
 
