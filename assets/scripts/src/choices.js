@@ -1772,7 +1772,6 @@ class Choices {
 
 
   _setCaretPosition(caretPos, caretPosEnd) {
-    console.log(caretPos+ ' '+caretPosEnd);
     if (this.input !== null) {
       this.input.value = this.input.value;
       // ^ this is used to not only get "focus", but
