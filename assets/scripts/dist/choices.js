@@ -643,16 +643,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	                dropdownItem = this._getTemplate('notice', notice, 'no-results');
 	              } else if (this.config.searchUrlEnabled) {
-	                notice = (0, _utils.isType)('Function', this.config.typeToSearchText) ? this.config.typeToSearchText() : this.config.typeToSearchText;
+	                if (this.input.value.length > 0) {
+	                  this._handleSearch((0, _utils.stripHTML)(this.input.value));
+	                } else {
+	                  notice = (0, _utils.isType)('Function', this.config.typeToSearchText) ? this.config.typeToSearchText() : this.config.typeToSearchText;
 
-	                dropdownItem = this._getTemplate('notice', notice, 'no-choices');
-	              } else {
+	                  dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+	                }
+	              } else if (!this.config.searchUrlEnabled) {
 	                notice = (0, _utils.isType)('Function', this.config.noChoicesText) ? this.config.noChoicesText() : this.config.noChoicesText;
 
 	                dropdownItem = this._getTemplate('notice', notice, 'no-choices');
 	              }
-
-	              this.choiceList.appendChild(dropdownItem);
+	              if (dropdownItem) {
+	                this.choiceList.appendChild(dropdownItem);
+	              }
 	            }
 	          }
 	        }
@@ -1419,6 +1424,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.hideDropdown();
 	        this.containerOuter.focus();
 	      }
+	      if (this.config.searchUrlEnabled) {
+	        this._clearChoices();
+	        if (null !== this.timer) {
+	          clearTimeout(this.timer);
+	        }
+	      }
 	    }
 
 	    /**
@@ -1514,8 +1525,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: '_canAddItem',
 	    value: function _canAddItem(activeItems, value) {
 	      var canAddItem = true;
-	      var notice = (0, _utils.isType)('Function', this.config.addItemText) ? this.config.addItemText(value) : this.config.addItemText;
-
+	      var notice = null;
+	      if (this.isTextElement) {
+	        notice = (0, _utils.isType)('Function', this.config.addItemText) ? this.config.addItemText(value) : this.config.addItemText;
+	      }
 	      if (this.isSelectMultipleElement || this.isTextElement) {
 	        if (this.config.maxItemCount > 0 && this.config.maxItemCount <= activeItems.length) {
 	          // If there is a max entry limit and we have reached that limit
@@ -1713,9 +1726,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_searchParseResult',
 	    value: function _searchParseResult(data, value) {
-	      this._clearChoices();
-	      this._addChoice(value, value, false, false, -1, null, true);
-	      this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+	      // Valeur déjà ajourée sans attendre l'autocomplete
+	      var actualValue = (0, _utils.stripHTML)(this.input.value);
+	      if (actualValue.length == 0) return;
+	      var activeItems = this.store.getItemsFilteredByActive();
+	      var canAddItem = this._canAddItem(activeItems, actualValue);
+
+	      if (canAddItem.response) {
+	        this._clearAllChoicesButPlaceholders();
+	        var placeholders = this.store.getPlaceholderChoice();
+	        if (!placeholders || placeholders.length == 0) {
+	          this._addChoice(actualValue, actualValue, false, false, -1, null, true);
+	        }
+	        this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+	      } else if (canAddItem.notice) {
+	        this._clearChoices();
+	        this.choiceList.innerHTML = '';
+	        this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
+	      } else {
+	        this._clearChoices();
+	      }
 	    }
 	    /**
 	     * Determine the action when a user is searching
@@ -2056,7 +2086,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (null !== this.timer) {
 	              clearTimeout(this.timer);
 	            }
-	            this._clearPlaceholders();
+	            this._clearChoices();
+	            var notice = (0, _utils.isType)('Function', this.config.typeToSearchText) ? this.config.typeToSearchText() : this.config.typeToSearchText;
+
+	            var _dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+	            this.choiceList.innerHTML = '';
+	            this.choiceList.appendChild(_dropdownItem);
 	          }
 	          if (!this.isTextElement && this.isSearching) {
 	            this.isSearching = false;
@@ -2686,6 +2721,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: '_clearChoices',
 	    value: function _clearChoices() {
 	      this.store.dispatch((0, _index3.clearChoices)());
+	    }
+
+	    /**
+	     * Clear all choices added to the store but placeholders.
+	     * @return
+	     * @private
+	     */
+
+	  }, {
+	    key: '_clearAllChoicesButPlaceholders',
+	    value: function _clearAllChoicesButPlaceholders() {
+	      this.store.dispatch((0, _index3.clearAllChoicesButPlaceholders)());
 	    }
 
 	    /**
@@ -5503,6 +5550,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	      }
 
+	    case 'CLEAR_ALL_CHOICES_BUT_PLACEHOLDERS':
+	      {
+	        return state.filter(function (choice) {
+	          return choice.placeholder === true;
+	        });
+	      }
+
 	    case 'CLEAR_CHOICES':
 	      {
 	        return state.choices = [];
@@ -5620,6 +5674,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	var clearChoices = exports.clearChoices = function clearChoices() {
 	  return {
 	    type: 'CLEAR_CHOICES'
+	  };
+	};
+
+	var clearAllChoicesButPlaceholders = exports.clearAllChoicesButPlaceholders = function clearAllChoicesButPlaceholders() {
+	  return {
+	    type: 'CLEAR_ALL_CHOICES_BUT_PLACEHOLDERS'
 	  };
 	};
 

@@ -13,6 +13,7 @@ import {
   clearAll,
   clearChoices,
   clearPlaceholders,
+  clearAllChoicesButPlaceholders,
 }
 from './actions/index';
 import {
@@ -556,20 +557,25 @@ class Choices {
 
               dropdownItem = this._getTemplate('notice', notice, 'no-results');
             } else if (this.config.searchUrlEnabled) {
-              notice = isType('Function', this.config.typeToSearchText) ?
-                this.config.typeToSearchText() :
-                this.config.typeToSearchText;
+              if(this.input.value.length > 0) {
+                this._handleSearch(stripHTML(this.input.value));
+              } else {
+                notice = isType('Function', this.config.typeToSearchText) ?
+                  this.config.typeToSearchText() :
+                  this.config.typeToSearchText;
 
-              dropdownItem = this._getTemplate('notice', notice, 'no-choices');
-            } else {
+                dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+              }
+            } else if (!this.config.searchUrlEnabled) {
               notice = isType('Function', this.config.noChoicesText) ?
                 this.config.noChoicesText() :
                 this.config.noChoicesText;
 
               dropdownItem = this._getTemplate('notice', notice, 'no-choices');
             }
-
-            this.choiceList.appendChild(dropdownItem);
+            if(dropdownItem) {
+              this.choiceList.appendChild(dropdownItem);
+            }
           }
         }
       }
@@ -1299,6 +1305,12 @@ class Choices {
       this.hideDropdown();
       this.containerOuter.focus();
     }
+    if(this.config.searchUrlEnabled) {
+      this._clearChoices();
+      if (null !== this.timer) {
+        clearTimeout(this.timer);
+      }
+    }
   }
   
   /**
@@ -1391,10 +1403,12 @@ class Choices {
    */
   _canAddItem(activeItems, value) {
     let canAddItem = true;
-    let notice = isType('Function', this.config.addItemText) ?
-      this.config.addItemText(value) :
-      this.config.addItemText;
-
+    let notice = null;
+    if(this.isTextElement) {
+      notice = isType('Function', this.config.addItemText) ?
+        this.config.addItemText(value) :
+        this.config.addItemText;
+    }
     if (this.isSelectMultipleElement || this.isTextElement) {
       if (this.config.maxItemCount > 0 && this.config.maxItemCount <= activeItems.length) {
         // If there is a max entry limit and we have reached that limit
@@ -1600,13 +1614,31 @@ class Choices {
    * @param  {String} value Search value
    * @return
    * @private
-   */
+   */ 
   _searchParseResult(data, value) {
-    this._clearChoices();
-    this._addChoice(
-      value,
-      value, false, false, -1, null, true);
-    this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+    // Valeur déjà ajourée sans attendre l'autocomplete
+    const actualValue = stripHTML(this.input.value);
+    if(actualValue.length == 0)
+      return;
+    const activeItems = this.store.getItemsFilteredByActive();
+    const canAddItem = this._canAddItem(activeItems, actualValue);
+
+    if(canAddItem.response) {
+      this._clearAllChoicesButPlaceholders();
+      const placeholders = this.store.getPlaceholderChoice();
+      if(!placeholders || placeholders.length == 0) {
+        this._addChoice(
+          actualValue,
+          actualValue, false, false, -1, null, true);
+      }
+      this.setChoices(data[this.config.searchUrlResultsArray], this.config.searchUrlValue, this.config.searchUrlLabel, false);
+    } else if (canAddItem.notice) {
+      this._clearChoices();
+      this.choiceList.innerHTML = '';
+      this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
+    } else {
+      this._clearChoices();
+    }
 
   }
   /**
@@ -1938,7 +1970,14 @@ class Choices {
           if (null !== this.timer) {
             clearTimeout(this.timer);
           }
-          this._clearPlaceholders();
+          this._clearChoices();
+          let notice = isType('Function', this.config.typeToSearchText) ?
+            this.config.typeToSearchText() :
+            this.config.typeToSearchText;
+
+          let dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+          this.choiceList.innerHTML = '';
+          this.choiceList.appendChild(dropdownItem);
         }
         if (!this.isTextElement && this.isSearching) {
           this.isSearching = false;
@@ -2531,6 +2570,18 @@ class Choices {
       clearChoices()
     );
   }
+
+  /**
+   * Clear all choices added to the store but placeholders.
+   * @return
+   * @private
+   */
+  _clearAllChoicesButPlaceholders() {
+    this.store.dispatch(
+      clearAllChoicesButPlaceholders()
+    );
+  }
+  
 
   /**
    * Clear all choices added to the store.

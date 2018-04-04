@@ -63,6 +63,12 @@ export const clearChoices = () => {
   };
 };
 
+export const clearAllChoicesButPlaceholders = () => {
+  return {
+    type: 'CLEAR_ALL_CHOICES_BUT_PLACEHOLDERS',
+  };
+};
+
 export const clearPlaceholders = () => {
   return {
     type: 'CLEAR_PLACEHOLDERS',

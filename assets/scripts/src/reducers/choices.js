@@ -92,6 +92,11 @@ const choices = (state = [], action) => {
       return state.filter(choice => choice.placeholder !== true);
     }
 
+    case 'CLEAR_ALL_CHOICES_BUT_PLACEHOLDERS': {
+      return state.filter(choice => choice.placeholder === true);
+    }
+
+    
     case 'CLEAR_CHOICES': {
       return state.choices = [];
     }
