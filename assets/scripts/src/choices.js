@@ -143,6 +143,8 @@ class Choices {
     };
 
     this.ajaxRequest = null;
+    this.nbClick = 0;
+    this.dblClickTimer = null;
     
     // Merge options with user options
     this.config = extend(defaultConfig, userConfig);
@@ -1756,6 +1758,48 @@ class Choices {
     }
   }
 
+  _setCaretPositionAtEnd() {
+    if (this.input !== null) {
+      return this._setCaretPosition(this.input.value.length, this.input.value.length);
+    }
+  }
+
+  _setSelectAll() {
+    if (this.input !== null) {
+      return this._setCaretPosition(0, this.input.value.length);
+    }
+  }
+
+
+  _setCaretPosition(caretPos, caretPosEnd) {
+    console.log(caretPos+ ' '+caretPosEnd);
+    if (this.input !== null) {
+      this.input.value = this.input.value;
+      // ^ this is used to not only get "focus", but
+      // to make sure we don't have it everything -selected-
+      // (it causes an issue in chrome, and having it doesn't hurt any other browser)
+
+      if (this.input.createTextRange) {
+        var range = this.input.createTextRange();
+        range.moveStart('character', caretPos);
+        range.moveEnd('character', caretPosEnd);
+        range.select();
+        return true;
+      } else {
+        // (this.inputel.selectionStart === 0 added for Firefox bug)
+        if (this.input.selectionStart || this.input.selectionStart === 0) {
+          this.input.focus();
+          this.input.setSelectionRange(caretPos, caretPosEnd);
+          return true;
+        } else { // fail city, fortunately this never happens (as far as I've tested) :)
+          this.input.focus();
+          return false;
+        }
+      }
+    }
+  }
+
+
   /**
    * Key down event
    * @param  {Object} e Event
@@ -2120,6 +2164,20 @@ class Choices {
         }
       } else if (this.isSelectOneElement && target !== this.input && !this.dropdown.contains(target)) {
         this.hideDropdown(true);
+      }
+      if(target == this.containerInner) {
+        this.nbClick++ ;
+        if(this.nbClick == 1) {
+          var that = this;
+          this.dblClickTimer = setTimeout(function() {
+            that.nbClick = 0;
+          }, 400);
+          this._setCaretPositionAtEnd();
+        } else if(this.nbClick == 2) { 
+          clearTimeout(this.dblClickTimer);
+          this.nbClick = 0;
+          this._setSelectAll();
+        }
       }
     } else {
       const hasHighlightedItems = activeItems.some(item => item.highlighted);

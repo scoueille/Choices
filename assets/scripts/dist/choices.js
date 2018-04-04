@@ -204,6 +204,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    this.ajaxRequest = null;
+	    this.nbClick = 0;
+	    this.dblClickTimer = null;
 
 	    // Merge options with user options
 	    this.config = (0, _utils.extend)(defaultConfig, userConfig);
@@ -1874,6 +1876,50 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.input.style.width = (0, _utils.getWidthOfInput)(this.input);
 	      }
 	    }
+	  }, {
+	    key: '_setCaretPositionAtEnd',
+	    value: function _setCaretPositionAtEnd() {
+	      if (this.input !== null) {
+	        return this._setCaretPosition(this.input.value.length, this.input.value.length);
+	      }
+	    }
+	  }, {
+	    key: '_setSelectAll',
+	    value: function _setSelectAll() {
+	      if (this.input !== null) {
+	        return this._setCaretPosition(0, this.input.value.length);
+	      }
+	    }
+	  }, {
+	    key: '_setCaretPosition',
+	    value: function _setCaretPosition(caretPos, caretPosEnd) {
+	      console.log(caretPos + ' ' + caretPosEnd);
+	      if (this.input !== null) {
+	        this.input.value = this.input.value;
+	        // ^ this is used to not only get "focus", but
+	        // to make sure we don't have it everything -selected-
+	        // (it causes an issue in chrome, and having it doesn't hurt any other browser)
+
+	        if (this.input.createTextRange) {
+	          var range = this.input.createTextRange();
+	          range.moveStart('character', caretPos);
+	          range.moveEnd('character', caretPosEnd);
+	          range.select();
+	          return true;
+	        } else {
+	          // (this.inputel.selectionStart === 0 added for Firefox bug)
+	          if (this.input.selectionStart || this.input.selectionStart === 0) {
+	            this.input.focus();
+	            this.input.setSelectionRange(caretPos, caretPosEnd);
+	            return true;
+	          } else {
+	            // fail city, fortunately this never happens (as far as I've tested) :)
+	            this.input.focus();
+	            return false;
+	          }
+	        }
+	      }
+	    }
 
 	    /**
 	     * Key down event
@@ -2246,6 +2292,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	        } else if (this.isSelectOneElement && target !== this.input && !this.dropdown.contains(target)) {
 	          this.hideDropdown(true);
+	        }
+	        if (target == this.containerInner) {
+	          this.nbClick++;
+	          if (this.nbClick == 1) {
+	            var that = this;
+	            this.dblClickTimer = setTimeout(function () {
+	              that.nbClick = 0;
+	            }, 400);
+	            this._setCaretPositionAtEnd();
+	          } else if (this.nbClick == 2) {
+	            clearTimeout(this.dblClickTimer);
+	            this.nbClick = 0;
+	            this._setSelectAll();
+	          }
 	        }
 	      } else {
 	        var hasHighlightedItems = activeItems.some(function (item) {
