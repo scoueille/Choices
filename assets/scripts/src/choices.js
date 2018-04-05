@@ -1760,9 +1760,13 @@ class Choices {
         return;
       }
     } else {
-      // If there is no placeholder, resize input to contents
-      idealWidth = getWidthOfInput(this.input);
-    }
+      if(!this.input.value) {
+        idealWidth = 20;
+      } else {
+        // If there is no placeholder, resize input to contents
+        idealWidth = getWidthOfInput(this.input);
+      }
+    } 
     this.input.style.width = idealWidth + 'px';
 
     var destWidth = parentWidth - parseFloat(this.input.offsetLeft);

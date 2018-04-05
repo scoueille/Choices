@@ -1877,8 +1877,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	          return;
 	        }
 	      } else {
-	        // If there is no placeholder, resize input to contents
-	        idealWidth = (0, _utils.getWidthOfInput)(this.input);
+	        if (!this.input.value) {
+	          idealWidth = 20;
+	        } else {
+	          // If there is no placeholder, resize input to contents
+	          idealWidth = (0, _utils.getWidthOfInput)(this.input);
+	        }
 	      }
 	      this.input.style.width = idealWidth + 'px';
 
