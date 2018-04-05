@@ -532,7 +532,7 @@ export const getWidthOfInput = (input) => {
     document.body.removeChild(testEl);
   }
 
-  return `${width}px`;
+  return width;
 };
 
 /**

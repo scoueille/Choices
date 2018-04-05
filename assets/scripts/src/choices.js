@@ -1744,18 +1744,37 @@ class Choices {
    * @return
    */
   _setInputWidth() {
+
+    var parentWidth = parseFloat(this.containerInner.clientWidth)
+      - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-left'))
+      - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-right'));
+    console.log(parentWidth);
+    var idealWidth = 0;
     if (this.placeholder) {
       // If there is a placeholder, we only want to set the width of the input when it is a greater
       // length than 75% of the placeholder. This stops the input jumping around.
       if (this.input.value && this.input.value.length >= (this.placeholder.length / 1.25)) {
-        this.input.style.width = getWidthOfInput(this.input);
+        idealWidth = getWidthOfInput(this.input);
       } else if(this.input.value.length == 0) {
-        this.input.style.width = getWidthOfInput(this.input);
+        idealWidth = getWidthOfInput(this.input);
+      } else {
+        return;
       }
     } else {
       // If there is no placeholder, resize input to contents
-      this.input.style.width = getWidthOfInput(this.input);
+      idealWidth = getWidthOfInput(this.input);
     }
+    console.log(idealWidth);
+    this.input.style.width = idealWidth + 'px';
+
+    var destWidth = parentWidth - parseFloat(this.input.offsetLeft);
+    console.log(destWidth);
+    if(destWidth < idealWidth && destWidth < parentWidth) {
+      destWidth = parentWidth;
+    }
+    console.log(destWidth);
+    this.input.style.width = destWidth + 'px';
+
   }
 
   _setCaretPositionAtEnd() {
