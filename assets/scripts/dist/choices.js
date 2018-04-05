@@ -1863,18 +1863,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_setInputWidth',
 	    value: function _setInputWidth() {
+
+	      var parentWidth = parseFloat(this.containerInner.clientWidth) - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-left')) - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-right'));
+	      var idealWidth = 0;
 	      if (this.placeholder) {
 	        // If there is a placeholder, we only want to set the width of the input when it is a greater
 	        // length than 75% of the placeholder. This stops the input jumping around.
 	        if (this.input.value && this.input.value.length >= this.placeholder.length / 1.25) {
-	          this.input.style.width = (0, _utils.getWidthOfInput)(this.input);
+	          idealWidth = (0, _utils.getWidthOfInput)(this.input);
 	        } else if (this.input.value.length == 0) {
-	          this.input.style.width = (0, _utils.getWidthOfInput)(this.input);
+	          idealWidth = (0, _utils.getWidthOfInput)(this.input);
+	        } else {
+	          return;
 	        }
 	      } else {
 	        // If there is no placeholder, resize input to contents
-	        this.input.style.width = (0, _utils.getWidthOfInput)(this.input);
+	        idealWidth = (0, _utils.getWidthOfInput)(this.input);
 	      }
+	      this.input.style.width = idealWidth + 'px';
+
+	      var destWidth = parentWidth - parseFloat(this.input.offsetLeft);
+	      if (destWidth < idealWidth && destWidth < parentWidth) {
+	        destWidth = parentWidth;
+	      }
+	      this.input.style.width = destWidth + 'px';
 	    }
 	  }, {
 	    key: '_setCaretPositionAtEnd',
@@ -1893,7 +1905,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '_setCaretPosition',
 	    value: function _setCaretPosition(caretPos, caretPosEnd) {
-	      console.log(caretPos + ' ' + caretPosEnd);
 	      if (this.input !== null) {
 	        this.input.value = this.input.value;
 	        // ^ this is used to not only get "focus", but
@@ -2465,6 +2476,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (target === _this19.input) {
 	              // Remove the focus state
 	              _this19.containerOuter.classList.remove(_this19.config.classNames.focusState);
+
+	              if (_this19.config.searchUrlEnabled && target.value) {
+	                var _activeItems2 = _this19.store.getItemsFilteredByActive();
+	                var value = (0, _utils.stripHTML)(_this19.input.value);
+	                var canAddItem = _this19._canAddItem(_activeItems2, value);
+
+	                // All is good, add
+	                if (canAddItem.response) {
+	                  _this19._addItem(value);
+	                  _this19._triggerChange(value);
+	                  _this19.clearInput();
+	                }
+	              }
+
 	              // Hide dropdown if it is showing
 	              if (hasActiveDropdown) {
 	                _this19.hideDropdown();
@@ -6311,7 +6336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    document.body.removeChild(testEl);
 	  }
 
-	  return width + 'px';
+	  return width;
 	};
 
 	/**

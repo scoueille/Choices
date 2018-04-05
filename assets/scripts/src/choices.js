@@ -1748,7 +1748,6 @@ class Choices {
     var parentWidth = parseFloat(this.containerInner.clientWidth)
       - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-left'))
       - parseFloat(window.getComputedStyle(this.containerInner, null).getPropertyValue('padding-right'));
-    console.log(parentWidth);
     var idealWidth = 0;
     if (this.placeholder) {
       // If there is a placeholder, we only want to set the width of the input when it is a greater
@@ -1764,15 +1763,12 @@ class Choices {
       // If there is no placeholder, resize input to contents
       idealWidth = getWidthOfInput(this.input);
     }
-    console.log(idealWidth);
     this.input.style.width = idealWidth + 'px';
 
     var destWidth = parentWidth - parseFloat(this.input.offsetLeft);
-    console.log(destWidth);
     if(destWidth < idealWidth && destWidth < parentWidth) {
       destWidth = parentWidth;
     }
-    console.log(destWidth);
     this.input.style.width = destWidth + 'px';
 
   }
@@ -2335,6 +2331,20 @@ class Choices {
           if (target === this.input) {
             // Remove the focus state
             this.containerOuter.classList.remove(this.config.classNames.focusState);
+
+            if(this.config.searchUrlEnabled && target.value) {
+              const activeItems = this.store.getItemsFilteredByActive();
+              const value = stripHTML(this.input.value);
+              const canAddItem = this._canAddItem(activeItems, value);
+      
+              // All is good, add
+              if (canAddItem.response) {
+                this._addItem(value);
+                this._triggerChange(value);
+                this.clearInput();
+              }
+            }
+
             // Hide dropdown if it is showing
             if (hasActiveDropdown) {
               this.hideDropdown();
