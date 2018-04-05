@@ -285,6 +285,7 @@ class Choices {
     this.store.subscribe(this.render);
     // Render any items
     this.render();
+    this._setInputWidth();
     // Trigger event listeners
     this._addEventListeners();
 
@@ -2597,6 +2598,7 @@ class Choices {
       });
     }
 
+    this._setInputWidth();
     return this;
   }
 

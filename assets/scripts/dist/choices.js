@@ -343,6 +343,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.store.subscribe(this.render);
 	      // Render any items
 	      this.render();
+	      this._setInputWidth();
 	      // Trigger event listeners
 	      this._addEventListeners();
 
@@ -2757,6 +2758,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	      }
 
+	      this._setInputWidth();
 	      return this;
 	    }
 
