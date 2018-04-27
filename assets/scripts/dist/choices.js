@@ -164,6 +164,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return choice === item;
 	      },
 	      uniqueItemText: 'Only unique values can be added.',
+	      regexErrorText: 'Incorrect value',
 	      classNames: {
 	        containerOuter: 'choices',
 	        containerInner: 'choices__inner',
@@ -1267,6 +1268,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return this;
 	    }
 
+	    /**
+	     * Set input Width to 20px, use with conjunction with setInputWidth to recalculate width
+	     * @return
+	     */
+
+	  }, {
+	    key: 'resetInputWidth',
+	    value: function resetInputWidth() {
+	      this.input.style.width = '20px';
+	    }
+	  }, {
+	    key: 'setInputWidth',
+	    value: function setInputWidth() {
+	      this._setInputWidth();
+	    }
 	    /*=====  End of Public functions  ======*/
 
 	    /*=============================================
@@ -1553,6 +1569,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          // Determine whether we can update based on whether
 	          // our regular expression passes
 	          canAddItem = this._regexFilter(value);
+	          if (!canAddItem) {
+	            notice = (0, _utils.isType)('Function', this.config.regexErrorText) ? this.config.regexErrorText(value) : this.config.regexErrorText;
+	          }
 	        }
 	      }
 
