@@ -66,6 +66,8 @@ class Choices {
       duplicateItems: true,
       delimiter: ',',
       paste: true,
+      filterPaste: false,
+      filterPasteRegex: /;|,|\n|\r/gi,
       searchEnabled: true,
       searchChoices: true,
       searchUrlEnabled: false,
@@ -2262,6 +2264,49 @@ class Choices {
     // Disable pasting into the input if option has been set
     if (e.target === this.input && !this.config.paste) {
       e.preventDefault();
+    }
+    if (e.target === this.input && this.config.filterPaste) {
+      // Prevent the default pasting event and stop bubbling
+      e.preventDefault();
+      e.stopPropagation();
+    
+      // Get the clipboard data
+      let paste = (e.clipboardData || window.clipboardData).getData('text');
+      
+      // split values
+      let values = paste.split(this.config.filterPasteRegex);
+      let notice = '';
+      
+      values.forEach((value) => {
+        // Valeur déjà ajourée sans attendre l'autocomplete
+        const actualValue = stripHTML(value);
+        if(actualValue.length > 0) {
+          const activeItems = this.store.getItemsFilteredByActive();
+          const canAddItem = this._canAddItem(activeItems, actualValue);
+          if (canAddItem.response) {
+            this.setValue(new Array(value));
+          } else {
+            if (canAddItem.notice) {
+              if(notice.length > 0) {
+                notice += ', ' ;
+              }
+              notice += canAddItem.notice;
+            }
+          }
+        }
+      });
+      // We are typing into a text input and have a value, we want to show a dropdown
+      // notice. Otherwise hide the dropdown
+      if (notice.length > 0) {
+        if (this.isTextElement) {
+          const dropdownItem = this._getTemplate('notice', notice);
+          this.dropdown.innerHTML = dropdownItem.outerHTML;
+          this.showDropdown(true);
+        } else {
+          this.choiceList.innerHTML = '';
+          this.choiceList.appendChild(this._getTemplate('notice', notice));
+        }
+      }
     }
   }
 
