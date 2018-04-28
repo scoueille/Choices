@@ -1401,7 +1401,7 @@ class Choices {
       // If editing the last item is allowed and there are not other selected items,
       // we can edit the item value. Otherwise if we can remove items, remove all selected items
       if (this.config.editItems && !hasHighlightedItems && lastItem) {
-        this.input.value = lastItem.value;
+        this.input.value = lastItem.label;
         this._setInputWidth();
         this._removeItem(lastItem);
         this._triggerChange(lastItem.value);
