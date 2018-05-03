@@ -68,6 +68,8 @@ class Choices {
       paste: true,
       filterPaste: false,
       filterPasteRegex: /;|,|\n|\r/gi,
+      allowAddOnDelimiters: false,
+      addOnDelimiters: [',', ';'],
       searchEnabled: true,
       searchChoices: true,
       searchUrlEnabled: false,
@@ -2003,7 +2005,7 @@ class Choices {
     // If keycode has a function, run it
     if (keyDownActions[e.keyCode]) {
       keyDownActions[e.keyCode]();
-    }
+    } 
   }
 
   /**
@@ -2017,8 +2019,32 @@ class Choices {
       return;
     }
 
+    var activeItems = this.store.getItemsFilteredByActive();
+    const completeValue = stripHTML(this.input.value);
+    if (this.config.allowAddOnDelimiters && completeValue.length > 0) {
+      var delimiters = this.config.addOnDelimiters;
+      const completeValue = stripHTML(this.input.value);
+      var firstDelimiter = null;
+      delimiters.forEach(element => {
+        var delimiterPos = completeValue.indexOf(element);
+        if(delimiterPos >= 0 && (firstDelimiter == null || delimiterPos<firstDelimiter) ) {
+          firstDelimiter = delimiterPos;
+        }
+      });
+      if(firstDelimiter > 0) {
+        var newValue = completeValue.substr(0, firstDelimiter).trim();
+        const canAddItem = this._canAddItem(activeItems, newValue);
+        if (canAddItem.response) {
+          this.setValue(new Array(newValue));
+          this._triggerChange(newValue);
+          this.input.value = completeValue.substr(firstDelimiter + 1).trim();
+          this._setInputWidth();
+          activeItems = this.store.getItemsFilteredByActive();
+        } 
+      }
+    }
+
     const value = stripHTML(this.input.value);
-    const activeItems = this.store.getItemsFilteredByActive();
     const canAddItem = this._canAddItem(activeItems, value);
 
     // We are typing into a text input and have a value, we want to show a dropdown

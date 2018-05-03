@@ -129,6 +129,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      paste: true,
 	      filterPaste: false,
 	      filterPasteRegex: /;|,|\n|\r/gi,
+	      allowAddOnDelimiters: false,
+	      addOnDelimiters: [',', ';'],
 	      searchEnabled: true,
 	      searchChoices: true,
 	      searchUrlEnabled: false,
@@ -2135,8 +2137,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return;
 	      }
 
-	      var value = (0, _utils.stripHTML)(this.input.value);
 	      var activeItems = this.store.getItemsFilteredByActive();
+	      var completeValue = (0, _utils.stripHTML)(this.input.value);
+	      if (this.config.allowAddOnDelimiters && completeValue.length > 0) {
+	        var delimiters = this.config.addOnDelimiters;
+	        var _completeValue = (0, _utils.stripHTML)(this.input.value);
+	        var firstDelimiter = null;
+	        delimiters.forEach(function (element) {
+	          var delimiterPos = _completeValue.indexOf(element);
+	          if (delimiterPos >= 0 && (firstDelimiter == null || delimiterPos < firstDelimiter)) {
+	            firstDelimiter = delimiterPos;
+	          }
+	        });
+	        if (firstDelimiter > 0) {
+	          var newValue = _completeValue.substr(0, firstDelimiter).trim();
+	          var _canAddItem2 = this._canAddItem(activeItems, newValue);
+	          if (_canAddItem2.response) {
+	            this.setValue(new Array(newValue));
+	            this._triggerChange(newValue);
+	            this.input.value = _completeValue.substr(firstDelimiter + 1).trim();
+	            this._setInputWidth();
+	            activeItems = this.store.getItemsFilteredByActive();
+	          }
+	        }
+	      }
+
+	      var value = (0, _utils.stripHTML)(this.input.value);
 	      var canAddItem = this._canAddItem(activeItems, value);
 
 	      // We are typing into a text input and have a value, we want to show a dropdown
@@ -2520,6 +2546,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (target === _this20.input) {
 	              // Remove the focus state
 	              _this20.containerOuter.classList.remove(_this20.config.classNames.focusState);
+
+	              var value = (0, _utils.stripHTML)(_this20.input.value);
+	              var canAddItem = _this20._canAddItem(activeItems, value);
+	              if (canAddItem.response) {
+	                _this20.setValue(new Array(value));
+	                _this20._triggerChange(value);
+	                _this20.clearInput();
+	              } else {
+	                _this20.clearInput();
+	              }
 	              // De-select any highlighted items
 	              if (hasHighlightedItems) {
 	                _this20.unhighlightAll();
