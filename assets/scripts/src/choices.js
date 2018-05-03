@@ -2371,6 +2371,16 @@ class Choices {
           if (target === this.input) {
             // Remove the focus state
             this.containerOuter.classList.remove(this.config.classNames.focusState);
+            
+            const value = stripHTML(this.input.value);
+            const canAddItem = this._canAddItem(activeItems, value);
+            if (canAddItem.response) {
+              this.setValue(new Array(value));
+              this._triggerChange(value);
+              this.clearInput();
+            } else {
+              this.clearInput();
+            }
             // De-select any highlighted items
             if (hasHighlightedItems) {
               this.unhighlightAll();
